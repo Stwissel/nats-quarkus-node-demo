@@ -1,0 +1,14 @@
+# Node
+node_modules/
+dist/
+
+# Java / Maven
+target/
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+
+# local env overrides
+.env

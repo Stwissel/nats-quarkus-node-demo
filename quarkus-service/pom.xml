@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>demo</groupId>
+  <artifactId>quarkus-service</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <quarkus.platform.version>4.0.0.Beta1</quarkus.platform.version>
+    <!-- Quarkiverse connector for SmallRye Reactive Messaging over NATS JetStream.
+         Built against Quarkus 3.40.x — compatibility with Quarkus 4 probed at build time. -->
+    <nats-connector.version>3.40.6</nats-connector.version>
+    <surefire-plugin.version>3.5.2</surefire-plugin.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-bom</artifactId>
+        <version>${quarkus.platform.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-rest</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-messaging</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
+      <artifactId>quarkus-messaging-nats-jetstream</artifactId>
+      <version>${nats-connector.version}</version>
+    </dependency>
+    <!-- Plain NATS client for core request/reply and queue groups (same version the connector uses) -->
+    <dependency>
+      <groupId>io.nats</groupId>
+      <artifactId>jnats</artifactId>
+      <version>2.26.4</version>
+    </dependency>
+    <!-- Jackson 2: Quarkus 4 ships Jackson 3, but the NATS connector still needs a Jackson 2 ObjectMapper -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.22.3</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-maven-plugin</artifactId>
+        <version>${quarkus.platform.version}</version>
+        <extensions>true</extensions>
+        <executions>
+          <execution>
+            <goals>
+              <goal>build</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
