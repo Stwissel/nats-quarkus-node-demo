@@ -1,0 +1,107 @@
+- generic [ref=f5e2]:
+  - link "Skip to content" [ref=f5e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f5e4]:
+    - banner [ref=f5e6]:
+      - generic [ref=f5e7]:
+        - heading "Quarkus app" [level=1] [ref=f5e11]
+        - generic [ref=f5e12]: JetStream · Quarkus · Node
+      - status [ref=f5e14]:
+        - generic: connected
+    - generic [ref=f5e15]:
+      - generic:
+        - generic:
+          - navigation
+      - main [ref=f5e18]:
+        - generic [ref=f5e19]:
+          - generic [ref=f5e20]:
+            - generic [ref=f5e21]:
+              - heading "Subscriptions" [level=2] [ref=f5e27]
+              - generic [ref=f5e29]:
+                - generic [ref=f5e30]:
+                  - generic [ref=f5e31]: Subject
+                  - textbox "Subject" [ref=f5e34]:
+                    - /placeholder: ""
+                    - text: demo.quarkus.>
+                  - generic [ref=f5e35]: "Wildcards: * one token, > rest"
+                - generic [ref=f5e36]:
+                  - generic [ref=f5e37]: Queue group (optional)
+                  - textbox "Queue group (optional)" [ref=f5e40]:
+                    - /placeholder: ""
+                  - generic [ref=f5e41]: Same group = load-balanced delivery
+                - button "Subscribe" [ref=f5e43] [cursor=pointer]
+                - separator [ref=f5e45]
+                - generic [ref=f5e47]:
+                  - generic: "#1 demo.quarkus.> · 18"
+                  - button [ref=f5e49] [cursor=pointer]:
+                    - img "Remove" [ref=f5e51]
+            - generic [ref=f5e54]:
+              - heading "Publish" [level=2] [ref=f5e60]
+              - generic [ref=f5e62]:
+                - generic [ref=f5e63]:
+                  - generic [ref=f5e64]: Subject
+                  - textbox "Subject" [ref=f5e67]:
+                    - /placeholder: ""
+                    - text: demo.events.test
+                - generic [ref=f5e68]:
+                  - generic [ref=f5e69]: Payload
+                  - textbox "Payload" [ref=f5e72]:
+                    - /placeholder: ""
+                    - text: hello from the web UI
+                - generic [ref=f5e74] [cursor=pointer]:
+                  - switch "Persist via JetStream (DEMO stream)" [checked]
+                  - generic [ref=f5e77]: Persist via JetStream (DEMO stream)
+                - button "Publish" [ref=f5e79] [cursor=pointer]
+            - generic [ref=f5e81]:
+              - heading "Request / Reply" [level=2] [ref=f5e87]
+              - generic [ref=f5e89]:
+                - generic [ref=f5e91]:
+                  - generic [ref=f5e92]: Responder
+                  - generic [ref=f5e95]:
+                    - generic [ref=f5e96] [cursor=pointer]:
+                      - combobox "Responder" [ref=f5e97]: demo.greet — Quarkus replies
+                      - textbox [aria-hidden] [ref=f5e98]: demo.greet
+                    - generic:
+                      - generic: demo.greet — Quarkus replies
+                      - generic: demo.echo — Node replies
+                      - generic: demo.work — queue group "workers"
+                - generic [ref=f5e103]:
+                  - generic [ref=f5e104]: Payload
+                  - textbox "Payload" [ref=f5e107]:
+                    - /placeholder: ""
+                    - text: Ada Lovelace
+                - generic [ref=f5e108]:
+                  - button "Send request" [ref=f5e110] [cursor=pointer]
+                  - button "Send 6 to queue" [ref=f5e113] [cursor=pointer]
+            - generic [ref=f5e115]:
+              - heading "JetStream — stream DEMO" [level=2] [ref=f5e121]
+              - generic [ref=f5e123]:
+                - generic [ref=f5e124]:
+                  - generic [ref=f5e125]:
+                    - term [ref=f5e126]: Subjects
+                    - definition [ref=f5e127]: demo.events.>, demo.quarkus.ticks
+                  - generic [ref=f5e128]:
+                    - term [ref=f5e129]: Messages
+                    - definition [ref=f5e130]: "691"
+                  - generic [ref=f5e131]:
+                    - term [ref=f5e132]: Sequence range
+                    - definition [ref=f5e133]: 1 – 691
+                  - generic [ref=f5e134]:
+                    - term [ref=f5e135]: Consumers
+                    - definition [ref=f5e136]: quarkus-events
+                - generic [ref=f5e137]:
+                  - button "Refresh" [ref=f5e139] [cursor=pointer]
+                  - button "Replay last 10" [ref=f5e142] [cursor=pointer]
+          - generic [ref=f5e144]:
+            - generic [ref=f5e146]:
+              - generic [ref=f5e147]:
+                - heading "Live messages" [level=2] [ref=f5e151]
+                - generic [ref=f5e152]: "0"
+              - button "Clear" [ref=f5e154] [cursor=pointer]
+            - generic [ref=f5e163]:
+              - generic:
+                - text: Messages received by your subscriptions appear here (via Server-Sent Events). Subscribe to
+                - code [ref=f5e164]: demo.quarkus.>
+                - text: to watch the Quarkus service tick every 5 seconds.
+    - contentinfo [ref=f5e166]:
+      - generic [ref=f5e167]: NATS JetStream + Quarkus (SmallRye Reactive Messaging) + Node/TypeScript — docker compose demo

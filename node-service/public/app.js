@@ -108,7 +108,8 @@ async function refreshSubscriptions() {
 $('sub-add').addEventListener('click', async () => {
   const subject = $('sub-subject').value.trim();
   if (!subject) return;
-  const queue = $('sub-queue').value.trim();
+  // wa-input with no value attribute reports null, not '' — guard before trim.
+  const queue = ($('sub-queue').value ?? '').trim();
   await post('/api/subscriptions', { subject, ...(queue ? { queue } : {}) });
   await refreshSubscriptions();
 });

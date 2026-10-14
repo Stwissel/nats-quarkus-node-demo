@@ -1,0 +1,7 @@
+[     177ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:8088/favicon.ico:0
+[     269ms] [WARNING] [wa-button] size="small" is deprecated. Use size="s" instead. The long-form value will be removed in the next major version. @ https://ka-f.webawesome.com/webawesome@3.12.0/chunks/chunk.RPQJAXXR.js:12
+[     274ms] [WARNING] [wa-tag] size="small" is deprecated. Use size="s" instead. The long-form value will be removed in the next major version. @ https://ka-f.webawesome.com/webawesome@3.12.0/chunks/chunk.RPQJAXXR.js:12
+[     289ms] [WARNING] [wa-callout] size="small" is deprecated. Use size="s" instead. The long-form value will be removed in the next major version. @ https://ka-f.webawesome.com/webawesome@3.12.0/chunks/chunk.RPQJAXXR.js:12
+[   25971ms] [WARNING] [wa-button] size="small" is deprecated. Use size="s" instead. The long-form value will be removed in the next major version. @ https://ka-f.webawesome.com/webawesome@3.12.0/chunks/chunk.RPQJAXXR.js:12
+[   25977ms] [WARNING] [wa-tag] size="small" is deprecated. Use size="s" instead. The long-form value will be removed in the next major version. @ https://ka-f.webawesome.com/webawesome@3.12.0/chunks/chunk.RPQJAXXR.js:12
+[   25987ms] [WARNING] [wa-callout] size="small" is deprecated. Use size="s" instead. The long-form value will be removed in the next major version. @ https://ka-f.webawesome.com/webawesome@3.12.0/chunks/chunk.RPQJAXXR.js:12
