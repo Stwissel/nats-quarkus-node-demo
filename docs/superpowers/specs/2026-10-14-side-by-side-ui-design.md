@@ -89,7 +89,13 @@ GET    /api/events                      text/event-stream
            receivedAt, queue?, replyTo?}
        -> {kind:"subscribed", id, subject, queue?, createdAt, received}
        -> {kind:"unsubscribed", id}
-       plus a ": keep-alive" comment frame every 15s
+       plus a {"kind":"heartbeat"} frame every 15s
+
+       (node-service sends a ": keep-alive" SSE *comment* instead. A comment frame
+       cannot be expressed through a Quarkus Multi<String> without dropping to raw
+       Vert.x, and app.js ignores frames whose "kind" it does not recognise, so the
+       two are interchangeable to the client. Recorded here so section 6 states what
+       the code actually does.)
 
 GET    /api/subscriptions
        -> [{id, subject, queue?, createdAt, received}]
@@ -97,6 +103,9 @@ GET    /api/subscriptions
 POST   /api/subscriptions   {subject, queue?}
        -> 201 {id, subject, queue?, createdAt, received}
        -> 400 {error:"subject is required"}        when subject is blank
+       -> 400 {error:"<broker reason>"}            when the broker rejects the subject
+                                                   (quarkus only: jnats validates
+                                                   client-side, nats.js does not)
        also broadcasts {kind:"subscribed", ...} on the SSE feed
 
 DELETE /api/subscriptions/{id}

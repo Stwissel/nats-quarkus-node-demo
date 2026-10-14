@@ -100,7 +100,16 @@ public class ApiResource {
       return error(400, "subject is required");
     }
     String queue = text(in, "queue");
-    SubscriptionRegistry.Info info = subscriptions.subscribe(subject, queue.isEmpty() ? null : queue);
+    SubscriptionRegistry.Info info;
+    try {
+      info = subscriptions.subscribe(subject, queue.isEmpty() ? null : queue);
+    } catch (IllegalArgumentException e) {
+      // jnats validates subjects client-side (Validator.validateSubjectTerm), so a
+      // rejected subject is the user's typo, not a server fault. Say what is wrong:
+      // publish() and request() already do, and an opaque 500 here made the three
+      // write routes behave inconsistently with each other.
+      return error(400, ClientErrors.forClient(e));
+    }
     return Response.status(201).entity(json.write(info)).build();
   }
 
@@ -134,7 +143,7 @@ public class ApiResource {
       nats.get().publish(subject, payload.getBytes(StandardCharsets.UTF_8));
       return ok(Map.of("subject", subject, "jetstream", false));
     } catch (Exception e) {
-      return error(502, String.valueOf(e));
+      return error(502, ClientErrors.forClient(e));
     }
   }
 
@@ -173,7 +182,7 @@ public class ApiResource {
     try {
       return ok(jetStream.info());
     } catch (Exception e) {
-      return error(502, String.valueOf(e));
+      return error(502, ClientErrors.forClient(e));
     }
   }
 
@@ -184,7 +193,7 @@ public class ApiResource {
     try {
       return ok(jetStream.lastMessages(Math.max(0, Math.min(limit, 50))));
     } catch (Exception e) {
-      return error(502, String.valueOf(e));
+      return error(502, ClientErrors.forClient(e));
     }
   }
 

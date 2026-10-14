@@ -1,9 +1,0 @@
-[      30ms] [WARNING] [wa-button] size="small" is deprecated. Use size="s" instead. The long-form value will be removed in the next major version. @ https://ka-f.webawesome.com/webawesome@3.12.0/chunks/chunk.RPQJAXXR.js:12
-[      33ms] [WARNING] [wa-tag] size="small" is deprecated. Use size="s" instead. The long-form value will be removed in the next major version. @ https://ka-f.webawesome.com/webawesome@3.12.0/chunks/chunk.RPQJAXXR.js:12
-[      45ms] [WARNING] [wa-callout] size="small" is deprecated. Use size="s" instead. The long-form value will be removed in the next major version. @ https://ka-f.webawesome.com/webawesome@3.12.0/chunks/chunk.RPQJAXXR.js:12
-[    6451ms] TypeError: Cannot read properties of null (reading 'trim')
-    at HTMLElement.<anonymous> (http://localhost:8089/app.js:111:37)
-    at HTMLElement.click (https://ka-f.webawesome.com/webawesome@3.12.0/chunks/chunk.TU3FGFLO.js:202:17)
-    at eval (eval at <anonymous> (eval at evaluate (:368:30)), <anonymous>:8:38)
-    at async eval (eval at evaluate (:368:30), <anonymous>:4:30)
-    at async <anonymous>:394:30

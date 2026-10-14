@@ -40,9 +40,7 @@ public class JsonExceptionMapper implements ExceptionMapper<Throwable> {
     // carry internals — NatsConnectionProvider, for one, puts the broker URL in
     // its failure message, which would be credentials in any real deployment.
     // The full exception is in the log above.
-    String message = status >= 500
-        ? "internal server error"
-        : (ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage());
+    String message = status >= 500 ? "internal server error" : ClientErrors.forClient(ex);
     return Response.status(status)
         .type(MediaType.APPLICATION_JSON)
         .entity(json.write(Map.of("error", message)))

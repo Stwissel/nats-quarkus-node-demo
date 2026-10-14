@@ -1,8 +1,0 @@
-[    1404ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:8088/favicon.ico:0
-[    2477ms] [WARNING] [wa-callout] size="small" is deprecated. Use size="s" instead. The long-form value will be removed in the next major version. @ https://ka-f.webawesome.com/webawesome@3.12.0/chunks/chunk.RPQJAXXR.js:12
-[    2591ms] [WARNING] [wa-button] size="small" is deprecated. Use size="s" instead. The long-form value will be removed in the next major version. @ https://ka-f.webawesome.com/webawesome@3.12.0/chunks/chunk.RPQJAXXR.js:12
-[    2611ms] [WARNING] [wa-tag] size="small" is deprecated. Use size="s" instead. The long-form value will be removed in the next major version. @ https://ka-f.webawesome.com/webawesome@3.12.0/chunks/chunk.RPQJAXXR.js:12
-[   37812ms] TypeError: Cannot read properties of null (reading 'trim')
-    at WaButton.<anonymous> (http://localhost:8088/app.js:111:37)
-[   78465ms] TypeError: Cannot read properties of null (reading 'trim')
-    at WaButton.<anonymous> (http://localhost:8088/app.js:111:37)

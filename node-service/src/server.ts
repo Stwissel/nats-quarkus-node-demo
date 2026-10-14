@@ -29,11 +29,19 @@ function broadcast(event: object): void {
   for (const res of sseClients) res.write(frame)
 }
 
+/** A client mistake; the request handler turns this into a 400 rather than a 500. */
+class BadRequestError extends Error {}
+
 async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {
   const chunks: Buffer[] = []
   for await (const chunk of req) chunks.push(chunk as Buffer)
   const raw = Buffer.concat(chunks).toString('utf8')
-  return raw ? (JSON.parse(raw) as Record<string, unknown>) : {}
+  if (!raw) return {}
+  try {
+    return JSON.parse(raw) as Record<string, unknown>
+  } catch {
+    throw new BadRequestError('malformed JSON body')
+  }
 }
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
@@ -176,7 +184,9 @@ async function main(): Promise<void> {
     if (path.startsWith('/api/')) {
       handleApi(req, res, path).catch((err) => {
         console.error('api error:', err)
-        if (!res.headersSent) sendJson(res, 500, { error: String(err) })
+        if (res.headersSent) return
+        if (err instanceof BadRequestError) sendJson(res, 400, { error: err.message })
+        else sendJson(res, 500, { error: String(err) })
       })
     } else {
       void serveStatic(res, path)

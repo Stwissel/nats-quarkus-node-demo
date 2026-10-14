@@ -91,8 +91,10 @@ test_error_shapes() {
     local out
     out=$(body GET "$base/api/does-not-exist")
     assert_contains "$out" '"error"' "$svc unknown route returns a JSON error"
+    assert_eq '404' "$(status GET "$base/api/does-not-exist")" "$svc unknown route is 404"
     out=$(body POST "$base/api/publish" 'not json at all')
     assert_contains "$out" '"error"' "$svc malformed JSON body returns a JSON error"
+    assert_eq '400' "$(status POST "$base/api/publish" 'not json at all')" "$svc malformed JSON body is 400"
     # Client errors must stay specific — a blanket "internal server error" here
     # would mean the 4xx branches got swallowed by the 5xx one.
     case "$(printf '%s' "$out" | field error)" in
@@ -128,6 +130,19 @@ test_subscriptions() {
     # Review Focus 1 — blank subject must be a 400, not a 500.
     assert_eq '400' "$(status POST "$base/api/subscriptions" '{"subject":"  "}')" "$svc blank subject is 400"
   done
+
+  # A subject the broker rejects must tell the user why. node-service does not
+  # validate client-side (nats.js accepts it and fails later at the broker), so
+  # this is asserted on quarkus-service only — see the ledger ruling.
+  local out
+  assert_eq '400' "$(status POST "$QUARKUS/api/subscriptions" '{"subject":"demo events"}')" \
+    'quarkus-service rejects an invalid subject with 400'
+  out=$(body POST "$QUARKUS/api/subscriptions" '{"subject":"demo events"}')
+  case "$(printf '%s' "$out" | field error)" in
+    *'internal server error'*|__*) bad 'quarkus-service says why the subject was rejected' ;;
+    *)                             ok  'quarkus-service says why the subject was rejected' ;;
+  esac
+  if false; then :; fi
 }
 
 test_sse() {
@@ -230,11 +245,21 @@ print(len(d) if isinstance(d, list) else -1)')
     if [ "$count" -ge 0 ] && [ "$count" -le 5 ]; then ok "$svc honours limit=5"; else bad "$svc honours limit=5 (got $count)"; fi
 
     # Review Focus — limit above the cap must be clamped, not passed through.
+    # Only meaningful if the stream holds more than the cap, otherwise "<= 50"
+    # is satisfied no matter what the server does. Top it up first.
+    local depth; depth=$(body GET "$base/api/jetstream" | field messages)
+    if [ "$depth" -lt 60 ]; then
+      local i=0
+      while [ "$i" -lt $((60 - depth)) ]; do
+        body POST "$base/api/publish" '{"subject":"demo.events.fill","payload":"fill","jetstream":true}' > /dev/null
+        i=$((i + 1))
+      done
+    fi
     out=$(body GET "$base/api/jetstream/messages?limit=9999")
     count=$(printf '%s' "$out" | python3 -c 'import json,sys
 d = json.load(sys.stdin)
 print(len(d) if isinstance(d, list) else -1)')
-    if [ "$count" -ge 0 ] && [ "$count" -le 50 ]; then ok "$svc clamps limit to 50"; else bad "$svc clamps limit to 50 (got $count)"; fi
+    assert_eq '50' "$count" "$svc clamps limit to exactly 50 on a stream of 60+"
   done
 }
 

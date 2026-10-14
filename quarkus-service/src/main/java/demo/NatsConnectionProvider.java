@@ -52,10 +52,10 @@ public class NatsConnectionProvider {
   /** Never opens the connection — safe to call before anything else has. */
   public synchronized Status status() {
     if (connection == null) {
-      return new Status(false, natsUrl);
+      return new Status(false, ClientErrors.redact(natsUrl));
     }
     return new Status(connection.getStatus() == Connection.Status.CONNECTED,
-        connection.getConnectedUrl());
+        ClientErrors.redact(connection.getConnectedUrl()));
   }
 
   void onStop(@Observes ShutdownEvent ev) throws Exception {
