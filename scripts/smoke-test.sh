@@ -234,6 +234,35 @@ print(len(d) if isinstance(d, list) else -1)')
   done
 }
 
+# Subscribe on one service, publish from the other, assert the message crosses
+# over NATS. This is the behaviour the side-by-side demo exists to show.
+cross_check() {
+  local listener_name=$1 listener=$2 publisher_name=$3 publisher=$4
+  local token="cross-$RANDOM"
+  local feed; feed=$(mktemp)
+
+  curl -sN --max-time 8 "$listener/api/events" > "$feed" &
+  local pid=$!
+  sleep 1
+  body POST "$listener/api/subscriptions" '{"subject":"demo.events.cross"}' > /dev/null
+  sleep 1
+  body POST "$publisher/api/publish" \
+    "{\"subject\":\"demo.events.cross\",\"payload\":\"$token\",\"jetstream\":true}" > /dev/null
+  sleep 2
+  kill "$pid" 2>/dev/null
+  wait "$pid" 2>/dev/null
+
+  assert_contains "$(cat "$feed")" "$token" \
+    "published from $publisher_name, received by $listener_name over NATS"
+  rm -f "$feed"
+}
+
+test_cross_service() {
+  section 'cross-service delivery — the point of the demo'
+  cross_check 'quarkus-service' "$QUARKUS" 'node-service'    "$NODE"
+  cross_check 'node-service'    "$NODE"    'quarkus-service' "$QUARKUS"
+}
+
 test_health
 test_error_shapes
 test_subscriptions
@@ -241,6 +270,7 @@ test_sse
 test_publish
 test_request
 test_jetstream
+test_cross_service
 
 printf '\n\033[1m%d passed, %d failed\033[0m\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
