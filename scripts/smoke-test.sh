@@ -140,10 +140,14 @@ test_sse() {
     curl -sN --max-time 6 "$base/api/events" > "$feed" &
     local pid=$!
     sleep 1
-    body POST "$base/api/subscriptions" '{"subject":"demo.smoke.sse"}' > /dev/null
+    local sse_id
+    sse_id=$(body POST "$base/api/subscriptions" '{"subject":"demo.smoke.sse"}' | field id)
     sleep 1
     kill "$pid" 2>/dev/null
     wait "$pid" 2>/dev/null
+    # Leave no subscription behind: these accumulate across runs and clutter the
+    # Subscriptions card of the very UI this demo is meant to show.
+    body DELETE "$base/api/subscriptions/$sse_id" > /dev/null
 
     assert_contains "$(cat "$feed")" '"kind":"hello"'      "$svc SSE sends a hello frame on connect"
     assert_contains "$(cat "$feed")" '"kind":"subscribed"' "$svc SSE announces new subscriptions"
@@ -244,7 +248,8 @@ cross_check() {
   curl -sN --max-time 8 "$listener/api/events" > "$feed" &
   local pid=$!
   sleep 1
-  body POST "$listener/api/subscriptions" '{"subject":"demo.events.cross"}' > /dev/null
+  local sub_id
+  sub_id=$(body POST "$listener/api/subscriptions" '{"subject":"demo.events.cross"}' | field id)
   sleep 1
   body POST "$publisher/api/publish" \
     "{\"subject\":\"demo.events.cross\",\"payload\":\"$token\",\"jetstream\":true}" > /dev/null
@@ -254,6 +259,7 @@ cross_check() {
 
   assert_contains "$(cat "$feed")" "$token" \
     "published from $publisher_name, received by $listener_name over NATS"
+  body DELETE "$listener/api/subscriptions/$sub_id" > /dev/null
   rm -f "$feed"
 }
 

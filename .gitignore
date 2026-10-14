@@ -12,3 +12,6 @@ target/
 
 # local env overrides
 .env
+
+# Playwright MCP verification scratch (screenshots, console logs, snapshots)
+.playwright-mcp/
