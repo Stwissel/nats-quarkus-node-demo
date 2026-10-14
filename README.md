@@ -7,8 +7,8 @@ to exercise every function.
 | Container | Role |
 |---|---|
 | `nats` | NATS 2.12 with JetStream (persistence) enabled; monitoring on port 8222 |
-| `quarkus-service` | Quarkus 4.0.0.Beta1 + SmallRye Reactive Messaging via the Quarkiverse `quarkus-messaging-nats-jetstream` connector; plain `jnats` for core request/reply and queue groups |
-| `node-service` | Node 24 + TypeScript; serves the web UI and bridges it to NATS via REST + SSE (Server-Sent Events) |
+| `quarkus-service` | Quarkus 4.0.0.Beta1 + SmallRye Reactive Messaging via the Quarkiverse `quarkus-messaging-nats-jetstream` connector; plain `jnats` for core request/reply, queue groups, and the **Quarkus app** UI's REST + SSE API |
+| `node-service` | Node 24 + TypeScript; serves the **NodeJS app** UI and bridges it to NATS via REST + SSE (Server-Sent Events) |
 
 ## Run
 
@@ -16,9 +16,19 @@ to exercise every function.
 docker compose up --build
 ```
 
-- Web UI: **http://localhost:8088**
-- NATS monitoring: http://localhost:8222
-- Quarkus health: http://localhost:8089/health
+| URL | What |
+|---|---|
+| **http://localhost:8088** | **NodeJS app** — the UI served by `node-service` (blue buttons) |
+| **http://localhost:8089** | **Quarkus app** — the same UI served by `quarkus-service` (red buttons) |
+| http://localhost:8222 | NATS monitoring |
+| http://localhost:8089/health · http://localhost:8088/api/health | service health |
+
+Open the two apps side by side. They share no HTTP connection — everything that
+passes between them goes over NATS. Subscribe to `demo.events.>` in one, publish
+from the other, and watch the message arrive.
+
+> Each service's startup log reports the port *inside* its container (`8080`).
+> The reachable host ports are the ones above; `docker ps` is the authority.
 
 All host ports bind to `127.0.0.1` only.
 
@@ -79,3 +89,9 @@ cd quarkus-service && mvn quarkus:dev
 # terminal 3 — Node
 cd node-service && npm install && npm run dev
 ```
+
+## Testing
+
+With the stack running, `./scripts/smoke-test.sh` exercises every endpoint on
+both services, checks that their JSON shapes match, and asserts that a message
+published from one app is received by the other over NATS.

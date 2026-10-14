@@ -62,7 +62,7 @@
       <header slot="header" class="wa-split">
         <div class="wa-cluster wa-gap-s">
           <wa-icon name="tower-broadcast"></wa-icon>
-          <h1 class="app-title">NATS Messaging Demo</h1>
+          <h1 class="app-title">NodeJS app</h1>
           <wa-tag size="small" appearance="outlined">JetStream · Quarkus · Node</wa-tag>
         </div>
         <wa-badge id="conn-badge" variant="neutral">connecting…</wa-badge>
@@ -85,6 +85,7 @@
                 Subscribe
               </wa-button>
               <wa-divider></wa-divider>
+              <div id="sub-result" class="reply-box mono"></div>
               <div id="sub-list" class="wa-cluster wa-gap-xs"></div>
             </div>
           </wa-card>

@@ -2,17 +2,13 @@ package demo;
 
 import io.nats.client.Connection;
 import io.nats.client.Dispatcher;
-import io.nats.client.Nats;
-import io.nats.client.Options;
-import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.time.Instant;
 
 /**
@@ -24,19 +20,13 @@ public class CoreNatsService {
 
   private static final Logger LOG = Logger.getLogger(CoreNatsService.class);
 
-  @ConfigProperty(name = "nats.url")
-  String natsUrl;
+  @Inject
+  NatsConnectionProvider nats;
 
   private Connection connection;
 
-  void onStart(@Observes StartupEvent ev) throws Exception {
-    connection = Nats.connect(
-        Options.builder()
-            .server(natsUrl)
-            .connectionTimeout(Duration.ofSeconds(10))
-            .maxReconnects(-1)
-            .build());
-    LOG.infof("Connected to NATS at %s", natsUrl);
+  void onStart(@Observes StartupEvent ev) {
+    connection = nats.get();
 
     Dispatcher dispatcher = connection.createDispatcher();
 
@@ -64,12 +54,6 @@ public class CoreNatsService {
   public void publish(String subject, String payload) {
     if (connection != null) {
       connection.publish(subject, payload.getBytes(StandardCharsets.UTF_8));
-    }
-  }
-
-  void onStop(@Observes ShutdownEvent ev) throws Exception {
-    if (connection != null) {
-      connection.close();
     }
   }
 }

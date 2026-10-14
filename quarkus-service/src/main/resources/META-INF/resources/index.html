@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en" class="wa-theme-default wa-palette-default wa-light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NATS Messaging Demo</title>
+    <link rel="stylesheet" href="https://ka-f.webawesome.com/webawesome@3.12.0/styles/webawesome.css" />
+    <script type="module" src="https://ka-f.webawesome.com/webawesome@3.12.0/webawesome.loader.js"></script>
+    <script>
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.replace('wa-light', 'wa-dark');
+      }
+    </script>
+    <style>
+      /* Re-point the Web Awesome brand scale from blue to red. Every semantic
+         brand token (fill-loud, border-loud, on-quiet, the focus ring) is an
+         alias of these ten steps in both light and dark mode, so recolouring
+         here recolours every button, tag and badge without touching markup. */
+      :root {
+        --wa-color-brand-10: var(--wa-color-red-10);
+        --wa-color-brand-20: var(--wa-color-red-20);
+        --wa-color-brand-30: var(--wa-color-red-30);
+        --wa-color-brand-40: var(--wa-color-red-40);
+        --wa-color-brand-50: var(--wa-color-red-50);
+        --wa-color-brand-60: var(--wa-color-red-60);
+        --wa-color-brand-70: var(--wa-color-red-70);
+        --wa-color-brand-80: var(--wa-color-red-80);
+        --wa-color-brand-90: var(--wa-color-red-90);
+        --wa-color-brand-95: var(--wa-color-red-95);
+      }
+      html,
+      body {
+        min-height: 100%;
+        padding: 0;
+        margin: 0;
+      }
+      .app-title {
+        margin: 0;
+        font-size: var(--wa-font-size-l);
+      }
+      .card-title {
+        margin: 0;
+        font-size: var(--wa-font-size-m);
+      }
+      .mono {
+        font-family: var(--wa-font-family-code);
+        font-size: var(--wa-font-size-s);
+        overflow-wrap: anywhere;
+      }
+      .log {
+        max-height: 24rem;
+        overflow-y: auto;
+      }
+      .log-entry {
+        padding: var(--wa-space-2xs) var(--wa-space-xs);
+        border-radius: var(--wa-border-radius-s);
+        background: var(--wa-color-surface-lowered);
+      }
+      .log-entry time {
+        color: var(--wa-color-text-quiet);
+        font-size: var(--wa-font-size-xs);
+        white-space: nowrap;
+      }
+      .reply-box:empty {
+        display: none;
+      }
+      .stat-line dt {
+        color: var(--wa-color-text-quiet);
+      }
+      .stat-line dd {
+        margin: 0;
+        font-weight: var(--wa-font-weight-semibold);
+      }
+    </style>
+  </head>
+  <body>
+    <wa-page>
+      <header slot="header" class="wa-split">
+        <div class="wa-cluster wa-gap-s">
+          <wa-icon name="tower-broadcast"></wa-icon>
+          <h1 class="app-title">Quarkus app</h1>
+          <wa-tag size="small" appearance="outlined">JetStream · Quarkus · Node</wa-tag>
+        </div>
+        <wa-badge id="conn-badge" variant="neutral">connecting…</wa-badge>
+      </header>
+
+      <main>
+        <div class="wa-stack wa-gap-l">
+        <div class="wa-grid wa-gap-l wa-align-items-start" style="--min-column-size: 20rem;">
+          <!-- Subscribe / unsubscribe -->
+          <wa-card>
+            <div slot="header" class="wa-cluster wa-gap-xs">
+              <wa-icon name="satellite-dish"></wa-icon>
+              <h2 class="card-title">Subscriptions</h2>
+            </div>
+            <div class="wa-stack wa-gap-m">
+              <wa-input id="sub-subject" label="Subject" value="demo.quarkus.>" hint="Wildcards: * one token, > rest"></wa-input>
+              <wa-input id="sub-queue" label="Queue group (optional)" hint="Same group = load-balanced delivery"></wa-input>
+              <wa-button id="sub-add" variant="brand">
+                <wa-icon slot="start" name="plus"></wa-icon>
+                Subscribe
+              </wa-button>
+              <wa-divider></wa-divider>
+              <div id="sub-result" class="reply-box mono"></div>
+              <div id="sub-list" class="wa-cluster wa-gap-xs"></div>
+            </div>
+          </wa-card>
+
+          <!-- Publish -->
+          <wa-card>
+            <div slot="header" class="wa-cluster wa-gap-xs">
+              <wa-icon name="paper-plane"></wa-icon>
+              <h2 class="card-title">Publish</h2>
+            </div>
+            <div class="wa-stack wa-gap-m">
+              <wa-input id="pub-subject" label="Subject" value="demo.events.test"></wa-input>
+              <wa-textarea id="pub-payload" label="Payload" rows="2" value="hello from the web UI"></wa-textarea>
+              <wa-switch id="pub-js" checked>Persist via JetStream (DEMO stream)</wa-switch>
+              <wa-button id="pub-send" variant="brand">
+                <wa-icon slot="start" name="paper-plane"></wa-icon>
+                Publish
+              </wa-button>
+              <div id="pub-result" class="reply-box mono"></div>
+            </div>
+          </wa-card>
+
+          <!-- Request / reply -->
+          <wa-card>
+            <div slot="header" class="wa-cluster wa-gap-xs">
+              <wa-icon name="right-left"></wa-icon>
+              <h2 class="card-title">Request / Reply</h2>
+            </div>
+            <div class="wa-stack wa-gap-m">
+              <wa-select id="req-subject" label="Responder" value="demo.greet">
+                <wa-option value="demo.greet">demo.greet — Quarkus replies</wa-option>
+                <wa-option value="demo.echo">demo.echo — Node replies</wa-option>
+                <wa-option value="demo.work">demo.work — queue group "workers"</wa-option>
+              </wa-select>
+              <wa-input id="req-payload" label="Payload" value="Ada Lovelace"></wa-input>
+              <div class="wa-cluster wa-gap-xs">
+                <wa-button id="req-send" variant="brand">
+                  <wa-icon slot="start" name="reply"></wa-icon>
+                  Send request
+                </wa-button>
+                <wa-button id="req-burst" appearance="outlined">
+                  <wa-icon slot="start" name="layer-group"></wa-icon>
+                  Send 6 to queue
+                </wa-button>
+              </div>
+              <div id="req-result" class="wa-stack wa-gap-2xs"></div>
+            </div>
+          </wa-card>
+
+          <!-- JetStream status -->
+          <wa-card>
+            <div slot="header" class="wa-cluster wa-gap-xs">
+              <wa-icon name="database"></wa-icon>
+              <h2 class="card-title">JetStream — stream DEMO</h2>
+            </div>
+            <div class="wa-stack wa-gap-m">
+              <dl id="js-stats" class="wa-stack wa-gap-2xs" style="margin: 0;"></dl>
+              <div class="wa-cluster wa-gap-xs">
+                <wa-button id="js-refresh" appearance="outlined" size="small">
+                  <wa-icon slot="start" name="rotate"></wa-icon>
+                  Refresh
+                </wa-button>
+                <wa-button id="js-replay" appearance="outlined" size="small">
+                  <wa-icon slot="start" name="clock-rotate-left"></wa-icon>
+                  Replay last 10
+                </wa-button>
+              </div>
+              <div id="js-replay-out" class="wa-stack wa-gap-2xs"></div>
+            </div>
+          </wa-card>
+        </div>
+
+        <!-- Live log -->
+        <wa-card>
+          <div slot="header" class="wa-split">
+            <div class="wa-cluster wa-gap-xs">
+              <wa-icon name="list"></wa-icon>
+              <h2 class="card-title">Live messages</h2>
+              <wa-tag id="log-count" size="small" appearance="outlined">0</wa-tag>
+            </div>
+            <wa-button id="log-clear" appearance="plain" size="small">
+              <wa-icon slot="start" name="trash"></wa-icon>
+              Clear
+            </wa-button>
+          </div>
+          <div id="log" class="log wa-stack wa-gap-2xs">
+            <wa-callout variant="neutral" size="small">
+              <wa-icon slot="icon" name="circle-info"></wa-icon>
+              Messages received by your subscriptions appear here (via Server-Sent Events).
+              Subscribe to <code>demo.quarkus.&gt;</code> to watch the Quarkus service tick every 5 seconds.
+            </wa-callout>
+          </div>
+        </wa-card>
+        </div>
+      </main>
+
+      <footer slot="footer">
+        <small class="wa-color-text-quiet">
+          NATS JetStream + Quarkus (SmallRye Reactive Messaging) + Node/TypeScript — docker compose demo
+        </small>
+      </footer>
+    </wa-page>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
