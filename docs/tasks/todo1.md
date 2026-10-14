@@ -106,7 +106,7 @@ for k in sys.argv[1].split("."):
     except Exception:
         print("__MISSING__"); sys.exit()
 # json.dumps everything except plain strings, so booleans print as
-# true/false rather than Python's True/False.
+# true/false rather than Python True/False.
 print(d if isinstance(d, str) else json.dumps(d))
 ' "$1"
 }
