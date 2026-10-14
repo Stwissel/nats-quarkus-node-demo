@@ -17,6 +17,8 @@ import jakarta.ws.rs.PathParam;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 import io.nats.client.Message;
 import java.nio.charset.StandardCharsets;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.QueryParam;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -161,6 +163,28 @@ public class ApiResource {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       return error(504, "no reply: interrupted");
+    }
+  }
+
+  @GET
+  @Path("/jetstream")
+  @Blocking
+  public Response streamInfo() {
+    try {
+      return ok(jetStream.info());
+    } catch (Exception e) {
+      return error(502, String.valueOf(e));
+    }
+  }
+
+  @GET
+  @Path("/jetstream/messages")
+  @Blocking
+  public Response streamMessages(@QueryParam("limit") @DefaultValue("10") int limit) {
+    try {
+      return ok(jetStream.lastMessages(Math.max(0, Math.min(limit, 50))));
+    } catch (Exception e) {
+      return error(502, String.valueOf(e));
     }
   }
 

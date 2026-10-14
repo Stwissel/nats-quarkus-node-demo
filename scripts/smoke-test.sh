@@ -199,12 +199,48 @@ test_request() {
   done
 }
 
+test_jetstream() {
+  section 'JetStream stats and replay — both services'
+  # Make sure the stream is not empty.
+  body POST "$NODE/api/publish" '{"subject":"demo.events.smoke","payload":"for-replay","jetstream":true}' > /dev/null
+
+  for pair in "node-service $NODE" "quarkus-service $QUARKUS"; do
+    set -- $pair
+    local svc=$1 base=$2
+    local out
+
+    out=$(body GET "$base/api/jetstream")
+    assert_eq 'DEMO' "$(printf '%s' "$out" | field stream)" "$svc reports stream DEMO"
+    assert_contains "$out" 'demo.events.>' "$svc reports the stream subjects"
+    assert_contains "$out" 'firstSeq'      "$svc reports firstSeq"
+    assert_contains "$out" 'lastSeq'       "$svc reports lastSeq"
+    assert_contains "$out" 'quarkus-events' "$svc lists the durable consumer"
+
+    out=$(body GET "$base/api/jetstream/messages?limit=5")
+    assert_contains "$out" 'for-replay' "$svc replays persisted messages"
+    # count prints -1 unless the body really is a JSON array, so an error
+    # object cannot satisfy a "<= N" assertion by accident.
+    local count; count=$(printf '%s' "$out" | python3 -c 'import json,sys
+d = json.load(sys.stdin)
+print(len(d) if isinstance(d, list) else -1)')
+    if [ "$count" -ge 0 ] && [ "$count" -le 5 ]; then ok "$svc honours limit=5"; else bad "$svc honours limit=5 (got $count)"; fi
+
+    # Review Focus — limit above the cap must be clamped, not passed through.
+    out=$(body GET "$base/api/jetstream/messages?limit=9999")
+    count=$(printf '%s' "$out" | python3 -c 'import json,sys
+d = json.load(sys.stdin)
+print(len(d) if isinstance(d, list) else -1)')
+    if [ "$count" -ge 0 ] && [ "$count" -le 50 ]; then ok "$svc clamps limit to 50"; else bad "$svc clamps limit to 50 (got $count)"; fi
+  done
+}
+
 test_health
 test_error_shapes
 test_subscriptions
 test_sse
 test_publish
 test_request
+test_jetstream
 
 printf '\n\033[1m%d passed, %d failed\033[0m\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
