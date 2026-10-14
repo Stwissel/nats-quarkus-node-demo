@@ -1,6 +1,7 @@
 package demo;
 
 import io.nats.client.JetStream;
+import io.nats.client.JetStreamApiException;
 import io.nats.client.api.PublishAck;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -91,8 +92,12 @@ public class JetStreamAdmin {
             m.getSubject(),
             new String(m.getData(), StandardCharsets.UTF_8),
             m.getTime().toInstant().toString()));
-      } catch (Exception gap) {
-        // deleted message — skip
+      } catch (JetStreamApiException gap) {
+        // The broker answered "no such message": a deleted sequence. Skip it.
+        // An IOException is NOT caught here on purpose — a connection failure used
+        // to look identical to a gap, so the loop kept walking every remaining
+        // sequence, one round trip each, and then returned a partial list as 200.
+        // It now propagates to the route's 502.
       }
     }
     return out;

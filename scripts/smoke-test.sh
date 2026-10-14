@@ -95,6 +95,11 @@ test_error_shapes() {
     out=$(body POST "$base/api/publish" 'not json at all')
     assert_contains "$out" '"error"' "$svc malformed JSON body returns a JSON error"
     assert_eq '400' "$(status POST "$base/api/publish" 'not json at all')" "$svc malformed JSON body is 400"
+    # A body that parses but is not an object ("null", "5", "\"x\"") must also be a
+    # client error: the handlers index into it, so a null body threw a TypeError.
+    for weird in 'null' '5' '"x"'; do
+      assert_eq '400' "$(status POST "$base/api/publish" "$weird")" "$svc non-object body $weird is 400"
+    done
     # Client errors must stay specific — a blanket "internal server error" here
     # would mean the 4xx branches got swallowed by the 5xx one.
     case "$(printf '%s' "$out" | field error)" in

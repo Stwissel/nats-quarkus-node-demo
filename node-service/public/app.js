@@ -99,7 +99,11 @@ async function refreshSubscriptions() {
     tag.withRemove = true;
     tag.textContent = `#${sub.id} ${sub.subject}${sub.queue ? ` (${sub.queue})` : ''} · ${sub.received}`;
     tag.addEventListener('wa-remove', () => {
-      void api(`/api/subscriptions/${sub.id}`, { method: 'DELETE' }).then(refreshSubscriptions);
+      void api(`/api/subscriptions/${sub.id}`, { method: 'DELETE' })
+        .then(refreshSubscriptions)
+        .catch((err) => {
+          $('sub-result').textContent = String(err.message ?? err);
+        });
     });
     list.append(tag);
   }
@@ -110,8 +114,16 @@ $('sub-add').addEventListener('click', async () => {
   if (!subject) return;
   // wa-input with no value attribute reports null, not '' — guard before trim.
   const queue = ($('sub-queue').value ?? '').trim();
-  await post('/api/subscriptions', { subject, ...(queue ? { queue } : {}) });
-  await refreshSubscriptions();
+  const out = $('sub-result');
+  out.textContent = '';
+  try {
+    await post('/api/subscriptions', { subject, ...(queue ? { queue } : {}) });
+    await refreshSubscriptions();
+  } catch (err) {
+    // The server rejects subjects the broker will not accept; without this the
+    // button simply did nothing and the user could not tell why.
+    out.textContent = String(err.message ?? err);
+  }
 });
 
 // --- Publish ---------------------------------------------------------------
@@ -206,7 +218,13 @@ $('js-refresh').addEventListener('click', refreshStream);
 $('js-replay').addEventListener('click', async () => {
   const out = $('js-replay-out');
   out.replaceChildren();
-  const messages = await api('/api/jetstream/messages?limit=10');
+  let messages;
+  try {
+    messages = await api('/api/jetstream/messages?limit=10');
+  } catch (err) {
+    out.append(replyCallout('danger', String(err.message ?? err)));
+    return;
+  }
   if (messages.length === 0) {
     out.append(replyCallout('neutral', 'The stream is empty — publish something with JetStream enabled.'));
     return;
@@ -214,6 +232,12 @@ $('js-replay').addEventListener('click', async () => {
   for (const m of messages) {
     out.append(replyCallout('neutral', `[seq ${m.seq}] ${m.subject}: ${m.payload}`));
   }
+});
+
+$('log-clear').addEventListener('click', () => {
+  $('log').replaceChildren();
+  logCount = 0;
+  $('log-count').textContent = '0';
 });
 
 // --- Init ------------------------------------------------------------------

@@ -37,11 +37,19 @@ async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> 
   for await (const chunk of req) chunks.push(chunk as Buffer)
   const raw = Buffer.concat(chunks).toString('utf8')
   if (!raw) return {}
+  let parsed: unknown
   try {
-    return JSON.parse(raw) as Record<string, unknown>
+    parsed = JSON.parse(raw)
   } catch {
     throw new BadRequestError('malformed JSON body')
   }
+  // 'null' parses fine but the handlers index into the result, so it threw a
+  // TypeError and surfaced as a 500. Anything that is not an object is a client
+  // mistake; quarkus-service already answers 400 for these.
+  if (parsed === null || typeof parsed !== 'object') {
+    throw new BadRequestError('request body must be a JSON object')
+  }
+  return parsed as Record<string, unknown>
 }
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {

@@ -13,9 +13,15 @@ final class ClientErrors {
 
   private ClientErrors() {}
 
-  /** Replaces {@code user:password@} credentials in any embedded URL with {@code ***@}. */
+  /**
+   * Replaces the userinfo of any embedded URL with {@code ***@}.
+   *
+   * <p>Matches both NATS credential forms: {@code nats://user:password@host} and the
+   * token form {@code nats://token@host}, which has no colon. A plain
+   * {@code nats://host:4222} has no {@code @} and is left alone.
+   */
   static String redact(String text) {
-    return text == null ? null : text.replaceAll("(?<=://)[^/@\\s]+:[^/@\\s]+@", "***@");
+    return text == null ? null : text.replaceAll("(?<=://)[^/@\\s]+@", "***@");
   }
 
   /** The message a client may be shown for a failure it caused. */
