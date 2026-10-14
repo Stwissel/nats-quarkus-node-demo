@@ -93,11 +93,14 @@ public class JetStreamAdmin {
             new String(m.getData(), StandardCharsets.UTF_8),
             m.getTime().toInstant().toString()));
       } catch (JetStreamApiException gap) {
-        // The broker answered "no such message": a deleted sequence. Skip it.
-        // An IOException is NOT caught here on purpose — a connection failure used
-        // to look identical to a gap, so the loop kept walking every remaining
-        // sequence, one round trip each, and then returned a partial list as 200.
-        // It now propagates to the route's 502.
+        // Skip only the broker saying "no message found" (a deleted sequence).
+        // A connection failure used to look identical, so the loop kept walking
+        // every remaining sequence — one round trip each — and then returned a
+        // partial list as 200. Anything else, including IOException, propagates
+        // to the route's 502. Matches NatsBridge.lastMessages in node-service.
+        if (gap.getErrorCode() != 404) {
+          throw gap;
+        }
       }
     }
     return out;

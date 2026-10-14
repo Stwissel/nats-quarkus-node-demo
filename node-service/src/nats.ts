@@ -1,5 +1,6 @@
 import {
   connect,
+  NatsError,
   RetentionPolicy,
   StorageType,
   type JetStreamClient,
@@ -184,8 +185,13 @@ export class NatsBridge extends EventEmitter {
       try {
         const m = await this.jsm.streams.getMessage(STREAM, { seq })
         out.push({ seq: m.seq, subject: m.subject, payload: td.decode(m.data), time: m.time.toISOString() })
-      } catch {
-        // sequence gap (deleted message) — skip
+      } catch (err) {
+        // Skip only the broker saying "no message found" (a deleted sequence).
+        // A connection failure used to look identical, so the loop kept walking
+        // every remaining sequence — one round trip each — and then returned a
+        // partial list as 200. Anything else propagates to the route's 502.
+        // Matches JetStreamAdmin.lastMessages in quarkus-service.
+        if (!(err instanceof NatsError) || err.api_error?.code !== 404) throw err
       }
     }
     return out

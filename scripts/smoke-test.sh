@@ -299,6 +299,30 @@ test_cross_service() {
   cross_check 'node-service'    "$NODE"    'quarkus-service' "$QUARKUS"
 }
 
+# The two UI copies are deliberately separate files (see the spec's section 3),
+# which means nothing stops them drifting apart. app.js must stay byte-identical;
+# index.html may differ only by the heading and the red accent block.
+test_ui_copies_match() {
+  section 'UI copies have not drifted'
+  local node_js='node-service/public/app.js'
+  local quarkus_js='quarkus-service/src/main/resources/META-INF/resources/app.js'
+  local node_html='node-service/public/index.html'
+  local quarkus_html='quarkus-service/src/main/resources/META-INF/resources/index.html'
+
+  if diff -q "$node_js" "$quarkus_js" > /dev/null 2>&1; then
+    ok 'app.js is byte-identical in both services'
+  else
+    bad "app.js has drifted ($(diff "$node_js" "$quarkus_js" | grep -c '^[<>]') differing lines)"
+  fi
+
+  # index.html differs only by: the <h1> (2 lines), and the accent override
+  # (10 token lines + 6 lines of comment and braces) = 18 changed lines.
+  local html_diff
+  html_diff=$(diff "$node_html" "$quarkus_html" | grep -c '^[<>]')
+  assert_eq '18' "$html_diff" 'index.html differs only by the heading and the accent block'
+}
+
+test_ui_copies_match
 test_health
 test_error_shapes
 test_subscriptions
