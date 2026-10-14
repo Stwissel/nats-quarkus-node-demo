@@ -1,6 +1,7 @@
 # NATS JetStream + Quarkus (SmallRye Reactive Messaging) + Node/TypeScript demo.
 # Run:  docker compose up --build
-# UI:   http://localhost:8088
+# UIs:  http://localhost:8088 (NodeJS app)  ·  http://localhost:8089 (Quarkus app)
+#       Open both side by side to watch messages cross between them over NATS.
 name: nats-demo
 
 services:
@@ -52,7 +53,7 @@ services:
     environment:
       NATS_URL: nats://nats:4222
     ports:
-      - '127.0.0.1:8089:8080' # http://localhost:8089/health
+      - '127.0.0.1:8089:8080' # web UI + API
     depends_on:
       nats:
         condition: service_healthy
