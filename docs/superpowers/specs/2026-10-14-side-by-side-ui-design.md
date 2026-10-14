@@ -66,6 +66,8 @@ opening competing connections; no other refactoring is in scope.
 | `SubscriptionRegistry` | new | Dynamic subscribe / unsubscribe / list with per-subscription receive counts. Pushes every received message to the broadcaster. Java mirror of `node-service/src/nats.ts:103-141`. | `NatsConnectionProvider`, `UiEventBroadcaster` |
 | `UiEventBroadcaster` | new | Mutiny `BroadcastProcessor<String>` fanning JSON event frames out to all connected SSE clients. | — |
 | `JetStreamAdmin` | new | Stream info and replay-last-N via `connection.jetStreamManagement()`; JetStream publish via `connection.jetStream()`. | `NatsConnectionProvider` |
+| `JsonCodec` | new | The single place objects become JSON and back, wrapping the Jackson 2 `ObjectMapper` from `JacksonCompat`. | `JacksonCompat` |
+| `JsonExceptionMapper` | new | Turns every uncaught error into a JSON body. The UI calls `res.json()` before checking `res.ok`, so Quarkus's default HTML error page would surface as a parse error and hide the real failure. | `JsonCodec` |
 | `ApiResource` | new | `@Path("/api")` — the nine routes in section 6. Thin; delegates to the beans above. | all of the above |
 
 `HealthResource` at `/health` stays as is — the compose healthcheck depends on it.
@@ -178,6 +180,8 @@ deliberate deviation from unit TDD, accepted at design review.
 Created:
 ```
 quarkus-service/src/main/java/demo/NatsConnectionProvider.java
+quarkus-service/src/main/java/demo/JsonCodec.java
+quarkus-service/src/main/java/demo/JsonExceptionMapper.java
 quarkus-service/src/main/java/demo/SubscriptionRegistry.java
 quarkus-service/src/main/java/demo/UiEventBroadcaster.java
 quarkus-service/src/main/java/demo/JetStreamAdmin.java
@@ -199,7 +203,7 @@ README.md                                                 ports table + feature 
 
 | Risk | Mitigation |
 |---|---|
-| Web Awesome brand token names are not what we assume | Read the published 3.12 stylesheet before writing the override; fall back to per-component `variant` edits if no single token set controls the accent. |
+| ~~Web Awesome brand token names are not what we assume~~ **RESOLVED during planning** | Measured against the running page: the accent derives entirely from the ten steps `--wa-color-brand-10`…`-95`, which the theme aliases into every semantic token in both light and dark mode. Re-pointing them at the palette's own `--wa-color-red-NN` scale turns the Subscribe button from `rgb(0, 113, 236)` to `rgb(220, 49, 70)`. Caveat recorded in the plan: read the computed value in a separate tick from the style change, or you get the stale colour. |
 | Quarkus REST SSE semantics differ from node's raw `text/event-stream` writes | The client only needs `data:` frames; verify frame format with `curl -N` against `/api/events` early in implementation. |
 | Extracting the connection breaks the existing responders | `scripts/smoke-test.sh` asserts `demo.greet` and the `workers` queue split still work from both panes. |
 | The two `app.js` copies drift | Accepted and recorded in section 3. Out of scope to solve. |
