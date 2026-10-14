@@ -35,7 +35,14 @@ public class JsonExceptionMapper implements ExceptionMapper<Throwable> {
     if (status >= 500) {
       LOG.error("unhandled API error", ex);
     }
-    String message = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
+    // Client errors carry their own message because the UI shows it and the user
+    // can act on it. Server errors do not: an unexpected throwable's message can
+    // carry internals — NatsConnectionProvider, for one, puts the broker URL in
+    // its failure message, which would be credentials in any real deployment.
+    // The full exception is in the log above.
+    String message = status >= 500
+        ? "internal server error"
+        : (ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage());
     return Response.status(status)
         .type(MediaType.APPLICATION_JSON)
         .entity(json.write(Map.of("error", message)))

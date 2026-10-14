@@ -93,6 +93,12 @@ test_error_shapes() {
     assert_contains "$out" '"error"' "$svc unknown route returns a JSON error"
     out=$(body POST "$base/api/publish" 'not json at all')
     assert_contains "$out" '"error"' "$svc malformed JSON body returns a JSON error"
+    # Client errors must stay specific — a blanket "internal server error" here
+    # would mean the 4xx branches got swallowed by the 5xx one.
+    case "$(printf '%s' "$out" | field error)" in
+      *'internal server error'*) bad "$svc 400 keeps a specific message" ;;
+      *)                         ok  "$svc 400 keeps a specific message" ;;
+    esac
   done
 }
 

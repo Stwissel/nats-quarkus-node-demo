@@ -1,0 +1,56 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - heading "NATS Messaging Demo" [level=1] [ref=e5]
+      - generic [ref=e6]: JetStream · Quarkus · Node
+    - generic [ref=e7]: connected
+  - main [ref=e8]:
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - heading "Subscriptions" [level=2] [ref=e13]
+          - generic [ref=e14]:
+            - generic [ref=e15]: Subscribe
+            - generic [ref=e16]: No active subscriptions.
+        - generic [ref=e18]:
+          - heading "Publish" [level=2] [ref=e20]
+          - generic [ref=e21]:
+            - generic [ref=e22]: Persist via JetStream (DEMO stream)
+            - generic [ref=e23]: Publish
+        - generic [ref=e24]:
+          - heading "Request / Reply" [level=2] [ref=e26]
+          - generic [ref=e27]:
+            - generic [ref=e28]: demo.greet — Quarkus replies demo.echo — Node replies demo.work — queue group "workers"
+            - generic [ref=e29]:
+              - generic [ref=e30]: Send request
+              - generic [ref=e31]: Send 6 to queue
+        - generic [ref=e32]:
+          - heading "JetStream — stream DEMO" [level=2] [ref=e34]
+          - generic [ref=e35]:
+            - generic [ref=e36]:
+              - generic [ref=e37]:
+                - term [ref=e38]: Subjects
+                - definition [ref=e39]: demo.events.>, demo.quarkus.ticks
+              - generic [ref=e40]:
+                - term [ref=e41]: Messages
+                - definition [ref=e42]: "356"
+              - generic [ref=e43]:
+                - term [ref=e44]: Sequence range
+                - definition [ref=e45]: 1 – 356
+              - generic [ref=e46]:
+                - term [ref=e47]: Consumers
+                - definition [ref=e48]: quarkus-events
+            - generic [ref=e49]:
+              - generic [ref=e50]: Refresh
+              - generic [ref=e51]: Replay last 10
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - heading "Live messages" [level=2] [ref=e55]
+            - generic [ref=e56]: "0"
+          - generic [ref=e57]: Clear
+        - generic [ref=e59]:
+          - text: Messages received by your subscriptions appear here (via Server-Sent Events). Subscribe to
+          - code [ref=e60]: demo.quarkus.>
+          - text: to watch the Quarkus service tick every 5 seconds.
+  - contentinfo [ref=e61]: NATS JetStream + Quarkus (SmallRye Reactive Messaging) + Node/TypeScript — docker compose demo
