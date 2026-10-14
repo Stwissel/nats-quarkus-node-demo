@@ -15,6 +15,8 @@ import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PathParam;
 import org.jboss.resteasy.reactive.RestStreamElementType;
+import io.nats.client.Message;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -31,6 +33,9 @@ import java.util.Map;
 @Produces(MediaType.APPLICATION_JSON)
 public class ApiResource {
 
+  /** Matches the 5s timeout node-service uses. */
+  private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
+
   @Inject
   NatsConnectionProvider nats;
 
@@ -42,6 +47,9 @@ public class ApiResource {
 
   @Inject
   UiEventBroadcaster broadcaster;
+
+  @Inject
+  JetStreamAdmin jetStream;
 
   @GET
   @Path("/health")
@@ -102,6 +110,58 @@ public class ApiResource {
       return error(404, "no subscription with id " + id);
     }
     return ok(Map.of("id", id, "unsubscribed", true));
+  }
+
+  @POST
+  @Path("/publish")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Blocking
+  public Response publish(String requestBody) {
+    JsonNode in = json.read(requestBody);
+    String subject = text(in, "subject");
+    if (subject.isEmpty()) {
+      return error(400, "subject is required");
+    }
+    String payload = raw(in, "payload");
+    boolean useJetStream = in.path("jetstream").asBoolean(false);
+    try {
+      if (useJetStream) {
+        return ok(Map.of("subject", subject, "jetstream", true,
+            "seq", jetStream.publish(subject, payload)));
+      }
+      nats.get().publish(subject, payload.getBytes(StandardCharsets.UTF_8));
+      return ok(Map.of("subject", subject, "jetstream", false));
+    } catch (Exception e) {
+      return error(502, String.valueOf(e));
+    }
+  }
+
+  @POST
+  @Path("/request")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Blocking
+  public Response request(String requestBody) {
+    JsonNode in = json.read(requestBody);
+    String subject = text(in, "subject");
+    if (subject.isEmpty()) {
+      return error(400, "subject is required");
+    }
+    String payload = raw(in, "payload");
+    long started = System.nanoTime();
+    try {
+      Message reply = nats.get().request(
+          subject, payload.getBytes(StandardCharsets.UTF_8), REQUEST_TIMEOUT);
+      if (reply == null) {
+        return error(504, "no reply: timed out after " + REQUEST_TIMEOUT.toMillis() + " ms");
+      }
+      return ok(Map.of(
+          "subject", subject,
+          "reply", new String(reply.getData(), StandardCharsets.UTF_8),
+          "latencyMs", Math.round((System.nanoTime() - started) / 1_000_000.0)));
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return error(504, "no reply: interrupted");
+    }
   }
 
   // --- helpers shared by every route ---------------------------------------

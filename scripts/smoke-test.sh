@@ -151,10 +151,60 @@ test_sse() {
   done
 }
 
+test_publish() {
+  section 'publish — both services'
+  for pair in "node-service $NODE" "quarkus-service $QUARKUS"; do
+    set -- $pair
+    local svc=$1 base=$2
+    local out
+
+    out=$(body POST "$base/api/publish" '{"subject":"demo.events.smoke","payload":"hi","jetstream":false}')
+    assert_eq 'demo.events.smoke' "$(printf '%s' "$out" | field subject)" "$svc core publish echoes the subject"
+
+    out=$(body POST "$base/api/publish" '{"subject":"demo.events.smoke","payload":"hi","jetstream":true}')
+    local seq; seq=$(printf '%s' "$out" | field seq)
+    case "$seq" in
+      ''|*[!0-9]*) bad "$svc JetStream publish returns a numeric seq (got '$seq')" ;;
+      *)           ok  "$svc JetStream publish returns a numeric seq" ;;
+    esac
+
+    # Review Focus 1 — blank subject must be a 400.
+    assert_eq '400' "$(status POST "$base/api/publish" '{"subject":"","payload":"x"}')" "$svc blank publish subject is 400"
+
+    # Review Focus 3 — JetStream publish outside the DEMO stream must fail cleanly.
+    assert_eq '502' "$(status POST "$base/api/publish" '{"subject":"outside.the.stream","payload":"x","jetstream":true}')" \
+      "$svc JetStream publish to an unmanaged subject is 502"
+  done
+}
+
+test_request() {
+  section 'request/reply — crossing between the services'
+  local out
+
+  # node asks, quarkus answers
+  out=$(body POST "$NODE/api/request" '{"subject":"demo.greet","payload":"Ada"}')
+  assert_contains "$out" 'quarkus-service' 'node -> demo.greet is answered by quarkus-service'
+
+  # quarkus asks, node answers
+  out=$(body POST "$QUARKUS/api/request" '{"subject":"demo.echo","payload":"Ada"}')
+  assert_contains "$out" 'node-service' 'quarkus -> demo.echo is answered by node-service'
+
+  for pair in "node-service $NODE" "quarkus-service $QUARKUS"; do
+    set -- $pair
+    local svc=$1 base=$2
+    out=$(body POST "$base/api/request" '{"subject":"demo.work","payload":"job"}')
+    assert_contains "$out" 'latencyMs' "$svc request reports latencyMs"
+    assert_eq '504' "$(status POST "$base/api/request" '{"subject":"demo.nobody.listening","payload":"x"}')" \
+      "$svc request with no responder is 504"
+  done
+}
+
 test_health
 test_error_shapes
 test_subscriptions
 test_sse
+test_publish
+test_request
 
 printf '\n\033[1m%d passed, %d failed\033[0m\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
