@@ -102,8 +102,59 @@ test_error_shapes() {
   done
 }
 
+test_subscriptions() {
+  section 'subscriptions — both services'
+  for pair in "node-service $NODE" "quarkus-service $QUARKUS"; do
+    set -- $pair
+    local svc=$1 base=$2
+    local out id
+
+    out=$(body POST "$base/api/subscriptions" '{"subject":"demo.smoke.>"}')
+    id=$(printf '%s' "$out" | field id)
+    assert_eq 'demo.smoke.>' "$(printf '%s' "$out" | field subject)" "$svc POST subscription returns the subject"
+    assert_eq '0'            "$(printf '%s' "$out" | field received)" "$svc new subscription has received=0"
+    assert_contains "$out" 'createdAt' "$svc subscription carries createdAt"
+
+    out=$(body GET "$base/api/subscriptions")
+    assert_contains "$out" 'demo.smoke.>' "$svc GET lists the new subscription"
+
+    assert_eq '200' "$(status DELETE "$base/api/subscriptions/$id")" "$svc DELETE removes the subscription"
+
+    # Review Focus 4 — unknown id must be a 404 JSON error.
+    assert_eq '404' "$(status DELETE "$base/api/subscriptions/does-not-exist")" "$svc DELETE unknown id is 404"
+    out=$(body DELETE "$base/api/subscriptions/does-not-exist")
+    assert_contains "$out" '"error"' "$svc DELETE unknown id returns a JSON error"
+
+    # Review Focus 1 — blank subject must be a 400, not a 500.
+    assert_eq '400' "$(status POST "$base/api/subscriptions" '{"subject":"  "}')" "$svc blank subject is 400"
+  done
+}
+
+test_sse() {
+  section 'SSE feed — both services'
+  for pair in "node-service $NODE" "quarkus-service $QUARKUS"; do
+    set -- $pair
+    local svc=$1 base=$2
+    local feed; feed=$(mktemp)
+
+    curl -sN --max-time 6 "$base/api/events" > "$feed" &
+    local pid=$!
+    sleep 1
+    body POST "$base/api/subscriptions" '{"subject":"demo.smoke.sse"}' > /dev/null
+    sleep 1
+    kill "$pid" 2>/dev/null
+    wait "$pid" 2>/dev/null
+
+    assert_contains "$(cat "$feed")" '"kind":"hello"'      "$svc SSE sends a hello frame on connect"
+    assert_contains "$(cat "$feed")" '"kind":"subscribed"' "$svc SSE announces new subscriptions"
+    rm -f "$feed"
+  done
+}
+
 test_health
 test_error_shapes
+test_subscriptions
+test_sse
 
 printf '\n\033[1m%d passed, %d failed\033[0m\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

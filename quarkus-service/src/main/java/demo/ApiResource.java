@@ -9,6 +9,14 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import io.smallrye.mutiny.Multi;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PathParam;
+import org.jboss.resteasy.reactive.RestStreamElementType;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -29,6 +37,12 @@ public class ApiResource {
   @Inject
   JsonCodec json;
 
+  @Inject
+  SubscriptionRegistry subscriptions;
+
+  @Inject
+  UiEventBroadcaster broadcaster;
+
   @GET
   @Path("/health")
   public String health() {
@@ -36,6 +50,58 @@ public class ApiResource {
         "status", "UP",
         "service", "quarkus-service",
         "nats", nats.status()));
+  }
+
+  /**
+   * Server-Sent Events feed. A {@code hello} frame first, then live events, with
+   * a heartbeat every 15s so idle proxies do not close the connection. The UI
+   * ignores frames whose {@code kind} it does not recognise, so the heartbeat
+   * needs no client support.
+   */
+  @GET
+  @Path("/events")
+  @Produces(MediaType.SERVER_SENT_EVENTS)
+  @RestStreamElementType(MediaType.APPLICATION_JSON)
+  public Multi<String> events() {
+    Multi<String> hello = Multi.createFrom().item(
+        () -> json.write(Map.of("kind", "hello", "at", Instant.now().toString())));
+    Multi<String> heartbeats = Multi.createFrom().ticks().every(Duration.ofSeconds(15))
+        .onOverflow().drop()
+        .map(tick -> json.write(Map.of("kind", "heartbeat")));
+    Multi<String> live = Multi.createBy().merging().streams(broadcaster.stream(), heartbeats);
+    return Multi.createBy().concatenating().streams(hello, live);
+  }
+
+  @GET
+  @Path("/subscriptions")
+  @Blocking
+  public Response listSubscriptions() {
+    return ok(subscriptions.list());
+  }
+
+  @POST
+  @Path("/subscriptions")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Blocking
+  public Response subscribe(String requestBody) {
+    JsonNode in = json.read(requestBody);
+    String subject = text(in, "subject");
+    if (subject.isEmpty()) {
+      return error(400, "subject is required");
+    }
+    String queue = text(in, "queue");
+    SubscriptionRegistry.Info info = subscriptions.subscribe(subject, queue.isEmpty() ? null : queue);
+    return Response.status(201).entity(json.write(info)).build();
+  }
+
+  @DELETE
+  @Path("/subscriptions/{id}")
+  @Blocking
+  public Response unsubscribe(@PathParam("id") String id) {
+    if (!subscriptions.unsubscribe(id)) {
+      return error(404, "no subscription with id " + id);
+    }
+    return ok(Map.of("id", id, "unsubscribed", true));
   }
 
   // --- helpers shared by every route ---------------------------------------
